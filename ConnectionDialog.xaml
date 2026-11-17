@@ -1,0 +1,55 @@
+<Window x:Class="MergeHelper.ConnectionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Verbindung" Width="560" SizeToContent="Height" ResizeMode="NoResize"
+        WindowStartupLocation="CenterOwner" ShowInTaskbar="False">
+    <Grid Margin="12">
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+        </Grid.RowDefinitions>
+
+        <TextBlock Text="Name:" VerticalAlignment="Center" Margin="0,0,10,6" />
+        <TextBox x:Name="NameBox" Grid.Column="1" Margin="0,0,0,6" />
+
+        <TextBlock Grid.Row="1" Text="Collection-URL:" VerticalAlignment="Center" Margin="0,0,10,6" />
+        <TextBox x:Name="UrlBox" Grid.Row="1" Grid.Column="1" Margin="0,0,0,6"
+                 ToolTip="z.B. https://dev.azure.com/meineorganisation" />
+
+        <TextBlock Grid.Row="2" Text="Anmeldung:" VerticalAlignment="Top" Margin="0,2,10,6" />
+        <StackPanel Grid.Row="2" Grid.Column="1" Margin="0,2,0,6">
+            <RadioButton x:Name="EntraRadio" Content="Windows-/Microsoft-Konto (Entra ID, SSO)" IsChecked="True"
+                         Checked="Auth_Changed" />
+            <RadioButton x:Name="PatRadio" Content="Personal Access Token (PAT)" Margin="0,4,0,0"
+                         Checked="Auth_Changed" />
+        </StackPanel>
+
+        <TextBlock x:Name="TenantLabel" Grid.Row="3" Text="Tenant (optional):" VerticalAlignment="Center" Margin="0,0,10,6" />
+        <TextBox x:Name="TenantBox" Grid.Row="3" Grid.Column="1" Margin="0,0,0,6"
+                 ToolTip="Leer lassen = Standard. Nur nötig, wenn die DevOps-Organisation in einem fremden Tenant liegt (Tenant-ID oder z.B. firma.onmicrosoft.com)." />
+
+        <TextBlock x:Name="PatLabel" Grid.Row="4" Text="PAT:" VerticalAlignment="Center" Margin="0,0,10,6" />
+        <StackPanel Grid.Row="4" Grid.Column="1" Margin="0,0,0,6">
+            <PasswordBox x:Name="PatBox" />
+            <TextBlock x:Name="PatHint" Foreground="Gray" FontSize="11" Margin="0,2,0,0"
+                       Text="Benötigter Scope: Code (Read &amp; Write). Wird mit Windows-DPAPI verschlüsselt gespeichert." />
+        </StackPanel>
+
+        <TextBlock x:Name="TestResult" Grid.Row="5" Grid.ColumnSpan="2" TextWrapping="Wrap" Margin="0,6,0,0" />
+
+        <DockPanel Grid.Row="6" Grid.ColumnSpan="2" Margin="0,12,0,0" LastChildFill="False">
+            <Button x:Name="TestButton" Content="Verbindung testen" Click="Test_Click" DockPanel.Dock="Left" />
+            <Button Content="Abbrechen" IsCancel="True" DockPanel.Dock="Right" Margin="0" />
+            <Button Content="OK" IsDefault="True" Click="Ok_Click" DockPanel.Dock="Right" />
+        </DockPanel>
+    </Grid>
+</Window>

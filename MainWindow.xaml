@@ -1,0 +1,143 @@
+<Window x:Class="MergeHelper.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="MergeHelper – TFVC Merge-Kandidaten" Height="820" Width="1250" MinHeight="500" MinWidth="800"
+        WindowStartupLocation="CenterScreen" Loaded="Window_Loaded">
+
+    <Window.Resources>
+        <DataTemplate x:Key="FilterHeaderTemplate">
+            <StackPanel>
+                <TextBlock Text="{Binding}" FontWeight="SemiBold" />
+                <TextBox Tag="{Binding}" Margin="0,3,0,0" Loaded="FilterBox_Loaded" TextChanged="FilterBox_TextChanged"
+                         ToolTip="Filter: Text enthält (mehrere Wörter = alle müssen vorkommen, !wort = darf nicht vorkommen). Changeset/Datum zusätzlich: &gt;, &gt;=, &lt;, &lt;=, = z.B. &gt;=12000 oder &gt;01.10.2026" />
+            </StackPanel>
+        </DataTemplate>
+    </Window.Resources>
+
+    <DockPanel>
+        <StatusBar DockPanel.Dock="Bottom">
+            <StatusBarItem>
+                <TextBlock x:Name="StatusText" Text="Bereit" />
+            </StatusBarItem>
+            <StatusBarItem HorizontalAlignment="Right">
+                <TextBlock x:Name="CountText" />
+            </StatusBarItem>
+        </StatusBar>
+
+        <Grid Margin="8">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="230" MinHeight="140" />
+                <RowDefinition Height="8" />
+                <RowDefinition Height="*" MinHeight="150" />
+            </Grid.RowDefinitions>
+
+            <!-- Oberer Bereich: Konfiguration -->
+            <Grid x:Name="ConfigArea">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="330" MinWidth="200" />
+                    <ColumnDefinition Width="8" />
+                    <ColumnDefinition Width="*" />
+                </Grid.ColumnDefinitions>
+
+                <GroupBox Header="Verbindungen (Azure DevOps)">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                            <Button Content="Neu…" Click="AddConnection_Click" />
+                            <Button x:Name="EditConnectionButton" Content="Bearbeiten…" Click="EditConnection_Click" />
+                            <Button x:Name="DeleteConnectionButton" Content="Löschen" Click="DeleteConnection_Click" />
+                        </StackPanel>
+                        <ListBox x:Name="ConnectionList" SelectionChanged="ConnectionList_SelectionChanged"
+                                 MouseDoubleClick="EditConnection_Click">
+                            <ListBox.ItemTemplate>
+                                <DataTemplate>
+                                    <StackPanel Margin="0,1">
+                                        <TextBlock Text="{Binding Name}" FontWeight="SemiBold" />
+                                        <TextBlock Text="{Binding Url}" Foreground="Gray" FontSize="11" />
+                                    </StackPanel>
+                                </DataTemplate>
+                            </ListBox.ItemTemplate>
+                        </ListBox>
+                    </DockPanel>
+                </GroupBox>
+
+                <GridSplitter Grid.Column="1" Width="8" HorizontalAlignment="Stretch" Background="Transparent" />
+
+                <GroupBox Grid.Column="2" Header="Branch-Paare (Quelle → Ziel)">
+                    <DockPanel>
+                        <StackPanel DockPanel.Dock="Bottom" Orientation="Horizontal" Margin="0,6,0,0">
+                            <Button x:Name="AddPairButton" Content="Neu…" Click="AddPair_Click" />
+                            <Button x:Name="EditPairButton" Content="Bearbeiten…" Click="EditPair_Click" />
+                            <Button x:Name="DeletePairButton" Content="Löschen" Click="DeletePair_Click" />
+                            <Button x:Name="LoadButton" Content="▶ Changesets laden" FontWeight="Bold" Margin="18,0,0,0"
+                                    Click="Load_Click" />
+                        </StackPanel>
+                        <ListBox x:Name="PairList" DisplayMemberPath="Display" FontFamily="Consolas"
+                                 SelectionChanged="PairList_SelectionChanged" MouseDoubleClick="PairList_MouseDoubleClick"
+                                 ToolTip="Doppelklick lädt die Merge-Kandidaten" />
+                    </DockPanel>
+                </GroupBox>
+            </Grid>
+
+            <GridSplitter Grid.Row="1" Height="8" HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+                          ResizeDirection="Rows" Background="Transparent" />
+
+            <!-- Unterer Bereich: Grid -->
+            <DockPanel Grid.Row="2">
+                <DockPanel DockPanel.Dock="Top" Margin="0,0,0,6" LastChildFill="True">
+                    <StackPanel Orientation="Horizontal" DockPanel.Dock="Left">
+                        <Button x:Name="ReloadButton" Content="⟳ Neu laden" Click="Reload_Click" />
+                        <Button x:Name="CopyButton" Content="Nummern kopieren" Click="CopyIds_Click"
+                                ToolTip="Changeset-Nummern der markierten Zeilen (aufsteigend) in die Zwischenablage" />
+                        <Button x:Name="DetailsButton" Content="Details…" Click="Details_Click" />
+                        <Button x:Name="MergeButton" Content="Mergen…" Click="Merge_Click"
+                                ToolTip="Markierte Changesets in den lokalen Workspace des Ziel-Branches mergen" />
+                        <Button Content="Filter zurücksetzen" Click="ResetFilter_Click" Margin="18,0,6,0" />
+                    </StackPanel>
+                    <TextBlock x:Name="CurrentPairText" VerticalAlignment="Center" Margin="12,0,0,0"
+                               FontFamily="Consolas" Foreground="DimGray" TextTrimming="CharacterEllipsis" />
+                </DockPanel>
+
+                <DataGrid x:Name="ChangesetGrid" AutoGenerateColumns="False" IsReadOnly="True"
+                          SelectionMode="Extended" SelectionUnit="FullRow" CanUserAddRows="False"
+                          CanUserReorderColumns="False" HeadersVisibility="Column" GridLinesVisibility="Horizontal"
+                          HorizontalGridLinesBrush="#E5E5E5" AlternatingRowBackground="#F6F8FB"
+                          EnableRowVirtualization="True" VirtualizingPanel.IsVirtualizing="True"
+                          MouseDoubleClick="Grid_MouseDoubleClick" SelectionChanged="Grid_SelectionChanged">
+                    <DataGrid.ColumnHeaderStyle>
+                        <Style TargetType="DataGridColumnHeader">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                            <Setter Property="VerticalContentAlignment" Value="Top" />
+                            <Setter Property="Padding" Value="5,4" />
+                        </Style>
+                    </DataGrid.ColumnHeaderStyle>
+                    <DataGrid.ContextMenu>
+                        <ContextMenu>
+                            <MenuItem Header="Nummern kopieren" Click="CopyIds_Click" />
+                            <MenuItem Header="Zeilen kopieren (Tab-getrennt)" Click="CopyRows_Click" />
+                            <Separator />
+                            <MenuItem Header="Details…" Click="Details_Click" />
+                            <MenuItem Header="Mergen…" Click="Merge_Click" />
+                        </ContextMenu>
+                    </DataGrid.ContextMenu>
+                    <DataGrid.Columns>
+                        <DataGridTextColumn Header="Changeset" Binding="{Binding Id}" SortMemberPath="Id" Width="110"
+                                            HeaderTemplate="{StaticResource FilterHeaderTemplate}" />
+                        <DataGridTextColumn Header="Benutzer" Binding="{Binding User}" SortMemberPath="User" Width="200"
+                                            HeaderTemplate="{StaticResource FilterHeaderTemplate}" />
+                        <DataGridTextColumn Header="Datum" Binding="{Binding DateText}" SortMemberPath="Date" Width="140"
+                                            HeaderTemplate="{StaticResource FilterHeaderTemplate}" />
+                        <DataGridTextColumn Header="Kommentar" Binding="{Binding CommentSingleLine}" SortMemberPath="Comment"
+                                            Width="*" HeaderTemplate="{StaticResource FilterHeaderTemplate}">
+                            <DataGridTextColumn.ElementStyle>
+                                <Style TargetType="TextBlock">
+                                    <Setter Property="TextTrimming" Value="CharacterEllipsis" />
+                                    <Setter Property="ToolTip" Value="{Binding Comment}" />
+                                </Style>
+                            </DataGridTextColumn.ElementStyle>
+                        </DataGridTextColumn>
+                    </DataGrid.Columns>
+                </DataGrid>
+            </DockPanel>
+        </Grid>
+    </DockPanel>
+</Window>
